@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Dinner?" />
+  <meta name="theme-color" content="#FF5A36" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23FF5A36'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle'%3E%F0%9F%8D%BD%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23FF5A36'/%3E%3Cstop offset='100%25' stop-color='%23F59E0B'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Ctext x='90' y='118' font-size='88' text-anchor='middle'%3E%F0%9F%8D%BD%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+  <title>What's For Dinner? — Live Family Meal Planner</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- GunDB Zero-Setup Real-Time Decentralized Graph Sync -->
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            coral: {
+              50: '#FFF1EE',
+              100: '#FFE0D9',
+              500: '#FF5A36',
+              600: '#E54320',
+            },
+            sunny: {
+              50: '#FFFBEB',
+              100: '#FEF3C7',
+              400: '#FBBF24',
+              500: '#F59E0B',
+            },
+            mint: {
+              50: '#ECFDF5',
+              100: '#D1FAE5',
+              500: '#10B981',
+              600: '#059669',
+              700: '#047857',
+            },
+            berry: {
+              50: '#F5F3FF',
+              100: '#EDE9FE',
+              500: '#8B5CF6',
+              600: '#7C3AED',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #FFF7ED;
+      background-image:
+        radial-gradient(at 10% 5%, rgba(255, 90, 54, 0.12) 0px, transparent 45%),
+        radial-gradient(at 90% 8%, rgba(16, 185, 129, 0.12) 0px, transparent 45%),
+        radial-gradient(at 50% 95%, rgba(251, 191, 36, 0.15) 0px, transparent 50%),
+        linear-gradient(180deg, #FFF7ED 0%, #FEF3C7 100%);
+      background-attachment: fixed;
+      color: #1E1B18;
+      padding-top: env(safe-area-inset-top);
+    }
+
+    /* Prevent iOS Safari input auto-zoom & enforce >= 44px touch targets */
+    input, select, textarea {
+      font-size: 16px !important;
+      touch-action: manipulation;
+    }
+
+    button, [role="button"] {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+
+    .main-container {
+      padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+    }
+
+    @media (min-width: 768px) {
+      .main-container {
+        padding-bottom: 3rem;
+      }
+      input, select, textarea {
+        font-size: 14px !important;
+      }
+    }
+
+    .mobile-bottom-bar {
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .animate-pop {
+      animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.7; }
+    }
+
+    .sync-pulse {
+      animation: pulseDot 2.2s infinite ease-in-out;
+    }
+
+    @keyframes confettiDrop {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(180px) rotate(540deg); opacity: 0; }
+    }
+
+    .confetti-piece {
+      position: fixed;
+      top: 18%;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      pointer-events: none;
+      z-index: 60;
+      animation: confettiDrop 1.2s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-coral-100 selection:text-coral-600">
+
+  <!-- Toast Notification Banner -->
+  <div id="toast" class="fixed bottom-24 md:bottom-6 left-4 right-4 md:left-auto md:right-6 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200 flex justify-center md:justify-end">
+    <div class="bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-white/10 flex items-center gap-2.5 text-sm font-semibold max-w-sm">
+      <span id="toast-icon">✨</span>
+      <span id="toast-message">Saved</span>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- TOP HEADER                                                -->
+  <!-- ========================================================= -->
+  <header class="bg-white/95 backdrop-blur-md border-b border-orange-200/80 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
+      <!-- Brand -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-10 h-10 shrink-0 rounded-2xl bg-gradient-to-br from-coral-500 via-orange-500 to-sunny-400 text-white flex items-center justify-center text-xl shadow-md shadow-coral-500/25">
+          🍽️
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-xl font-extrabold bg-gradient-to-r from-coral-600 via-orange-500 to-amber-500 bg-clip-text text-transparent tracking-tight leading-tight truncate">
+            What's For Dinner?
+          </h1>
+          <p id="today-subtitle" class="text-xs font-medium text-stone-500 truncate">Weekly Meal Planner</p>
+        </div>
+      </div>
+
+      <!-- Right Controls: Live Sync Status Pill, 1-Tap Share Link & Grocery List -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onclick="handleStatusPillClick()"
+          class="inline-flex items-center gap-1.5 px-3 rounded-full bg-mint-50 hover:bg-mint-100 border border-mint-500/25 text-mint-700 text-xs font-extrabold transition active:scale-95"
+        >
+          <span id="header-sync-dot" class="w-2 h-2 rounded-full bg-mint-500 sync-pulse"></span>
+          <span id="header-sync-label">Live Synced • GARREAU</span>
+        </button>
+
+        <!-- 1-Tap Share Menu Button (Desktop & Mobile) -->
+        <button
+          type="button"
+          onclick="shareMenuLink()"
+          class="inline-flex items-center gap-1.5 px-3.5 rounded-xl bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white font-extrabold text-xs shadow-xs shadow-coral-500/20 transition active:scale-95"
+        >
+          <span>📲</span>
+          <span class="hidden sm:inline">Share Menu</span>
+        </button>
+
+        <!-- Desktop Grocery Button -->
+        <button
+          type="button"
+          onclick="openGroceryModal()"
+          class="hidden md:inline-flex items-center gap-1.5 px-3.5 rounded-xl bg-mint-50 hover:bg-mint-100 text-mint-700 border border-mint-500/25 font-bold text-sm transition active:scale-95"
+        >
+          <span>🛒</span>
+          <span>Grocery</span>
+          <span id="desktop-grocery-badge" class="px-2 py-0.5 text-xs font-extrabold rounded-full bg-mint-500 text-white">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================= -->
+  <!-- MAIN WORKSPACE                                            -->
+  <!-- ========================================================= -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-4 md:py-7 main-container space-y-6 md:space-y-8">
+
+    <!-- TOP ROW: MEALS + SPIN THE WHEEL -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+
+      <!-- 1. MY DINNER OPTIONS (Desktop Left 5 Cols | Mobile 'Meals' Tab) -->
+      <section id="panel-meals" class="hidden md:block md:col-span-5 bg-white/95 rounded-3xl border border-orange-200/80 border-t-4 border-t-berry-500 p-4 sm:p-6 shadow-md shadow-orange-950/5 space-y-4">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-base font-extrabold text-stone-900 flex items-center gap-1.5">
+              <span>🍲</span> My Dinner Options
+            </h2>
+            <p class="text-xs text-stone-500 mt-0.5">Only dinners you add here go on the wheel & randomizer.</p>
+          </div>
+          <span id="meal-count-badge" class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-berry-50 text-berry-600 border border-berry-500/20 shrink-0">
+            0 meals
+          </span>
+        </div>
+
+        <!-- Add Dinner Form -->
+        <form onsubmit="handleAddMeal(event)" class="bg-gradient-to-br from-berry-50/70 to-orange-50/70 p-3.5 rounded-2xl border border-berry-500/15 space-y-2.5">
+          <input
+            type="text"
+            id="new-meal-name"
+            required
+            maxlength="60"
+            placeholder="Dinner name (e.g., Chicken Tacos)..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-berry-500"
+          />
+          <textarea
+            id="new-meal-ingredients"
+            rows="2"
+            placeholder="Ingredients (optional — comma or new line separated)..."
+            class="w-full px-3.5 py-2 rounded-xl border border-stone-200 bg-white text-stone-700 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-berry-500"
+          ></textarea>
+          <button
+            type="submit"
+            class="w-full px-4 rounded-xl bg-berry-500 hover:bg-berry-600 text-white text-sm font-bold shadow-xs shadow-berry-500/25 transition active:scale-[0.99]"
+          >
+            + Add Dinner Option
+          </button>
+        </form>
+
+        <!-- Saved Dinners List -->
+        <div id="meal-library-list" class="space-y-2.5 md:max-h-[380px] md:overflow-y-auto pr-0.5">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- 2. SPIN THE WHEEL PANEL (Desktop Right 7 Cols | Mobile 'Spin' Tab) -->
+      <section id="panel-spin" class="md:col-span-7 bg-white/95 rounded-3xl border border-orange-200/80 border-t-4 border-t-coral-500 p-4 sm:p-6 shadow-md shadow-orange-950/5 flex flex-col items-center text-center">
+        <div class="w-full flex items-center justify-between border-b border-orange-100 pb-3.5 mb-5">
+          <div class="text-left">
+            <h2 class="text-base font-extrabold text-stone-900">"I Don't Know What to Make Tonight"</h2>
+            <p class="text-xs text-stone-500 mt-0.5">Spin your custom dinner list to pick tonight's meal.</p>
+          </div>
+          <span class="text-xs font-extrabold text-coral-600 bg-coral-50 border border-coral-500/20 px-3 py-1 rounded-full shrink-0">
+            🎡 Wheel
+          </span>
+        </div>
+
+        <!-- Wheel Container -->
+        <div class="relative flex flex-col items-center justify-center my-1">
+          <!-- Top Pointer -->
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20 drop-shadow-md pointer-events-none">
+            <svg width="32" height="36" viewBox="0 0 34 38" fill="none">
+              <path d="M17 37L2.27757 11.5C-0.415734 6.83509 2.95085 1 8.33975 1H25.6603C31.0492 1 34.4157 6.83509 31.7224 11.5L17 37Z" fill="#FF5A36" stroke="#FFFFFF" stroke-width="2.5"/>
+            </svg>
+          </div>
+
+          <div class="relative p-2.5 rounded-full bg-gradient-to-tr from-coral-500 via-sunny-400 to-mint-500 shadow-lg shadow-orange-500/20">
+            <div class="p-1 rounded-full bg-white">
+              <canvas
+                id="dinner-wheel"
+                onclick="triggerWheelSpin()"
+                style="width: 280px; height: 280px;"
+                class="rounded-full bg-white cursor-pointer block"
+              ></canvas>
+            </div>
+            <button
+              type="button"
+              onclick="triggerWheelSpin()"
+              aria-label="Spin wheel"
+              class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-sunny-400 to-coral-500 hover:from-sunny-500 hover:to-coral-600 text-white font-extrabold text-xs tracking-wider uppercase shadow-md border-4 border-white flex items-center justify-center transition transform hover:scale-105 active:scale-95"
+            >
+              SPIN
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary Spin CTA -->
+        <button
+          type="button"
+          id="spin-btn"
+          onclick="triggerWheelSpin()"
+          class="mt-5 w-full max-w-xs px-5 rounded-2xl bg-gradient-to-r from-coral-500 via-orange-500 to-amber-500 hover:from-coral-600 hover:via-orange-600 hover:to-amber-600 text-white font-extrabold text-base md:text-sm shadow-md shadow-coral-500/25 transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span id="spin-btn-text">🎲 Spin the Wheel!</span>
+        </button>
+
+        <!-- Helpful CTA when list is empty -->
+        <button
+          type="button"
+          id="empty-wheel-cta"
+          onclick="goToAddMeals()"
+          class="hidden mt-3 px-4 rounded-xl bg-berry-50 text-berry-600 border border-berry-500/20 text-xs font-extrabold transition active:scale-95"
+        >
+          + Add your first dinner option to spin →
+        </button>
+
+        <!-- Landed Meal Result Card -->
+        <div id="winner-card" class="hidden w-full mt-5 bg-gradient-to-br from-sunny-50 via-white to-coral-50/70 border-2 border-sunny-400/80 rounded-2xl p-4 text-left shadow-sm animate-pop">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sunny-400/25 text-amber-800 text-[11px] font-extrabold uppercase tracking-wider">
+                🎉 Tonight's Winner
+              </span>
+              <h3 id="winner-meal-name" class="text-lg font-extrabold text-stone-900 mt-1"></h3>
+            </div>
+            <button
+              type="button"
+              onclick="triggerWheelSpin()"
+              class="text-xs font-bold text-coral-600 hover:text-coral-500 px-3 rounded-xl bg-white border border-coral-200 shadow-2xs transition shrink-0"
+            >
+              Spin Again
+            </button>
+          </div>
+
+          <div id="winner-ingredients" class="mt-2.5 flex flex-wrap gap-1.5"></div>
+
+          <div class="mt-4 pt-3 border-t border-amber-200/70 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <button
+              type="button"
+              onclick="assignWinnerToTonight()"
+              class="flex-1 px-4 rounded-xl bg-mint-500 hover:bg-mint-600 text-white text-xs font-extrabold shadow-xs shadow-mint-500/20 transition active:scale-95"
+            >
+              Assign to Tonight (<span id="winner-tonight-label">Today</span>)
+            </button>
+
+            <div class="flex items-center gap-2">
+              <select
+                id="winner-day-select"
+                aria-label="Choose day of week"
+                class="flex-1 sm:flex-initial rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-800 font-bold focus:outline-none focus:ring-2 focus:ring-coral-500"
+              >
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+              </select>
+              <button
+                type="button"
+                onclick="assignWinnerToSelectedDay()"
+                class="px-4 rounded-xl bg-berry-500 hover:bg-berry-600 text-white text-xs font-extrabold transition active:scale-95"
+              >
+                Assign
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 3. THIS WEEK'S MENU PANEL (Desktop Full Width | Mobile 'Week' Tab) -->
+    <section id="panel-week" class="hidden md:block space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/95 p-4 rounded-3xl border border-orange-200/80 shadow-xs">
+        <div>
+          <h2 class="text-lg font-extrabold text-stone-900 flex items-center gap-1.5">
+            <span>📅</span> This Week's Menu
+          </h2>
+          <p class="text-xs text-stone-500">Fill empty days randomly from your list, or tap any day to edit, re-roll, or add a custom note.</p>
+        </div>
+
+        <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onclick="fillEmptyDaysRandomly()"
+            class="inline-flex items-center justify-center gap-1.5 px-4 rounded-xl bg-coral-500 hover:bg-coral-600 text-white font-extrabold text-xs shadow-xs shadow-coral-500/20 transition active:scale-95"
+          >
+            <span>🎲</span>
+            <span>Fill Empty Days</span>
+          </button>
+          <button
+            type="button"
+            onclick="randomizeEntireWeek()"
+            class="inline-flex items-center justify-center gap-1.5 px-4 rounded-xl bg-berry-50 hover:bg-berry-100 text-berry-600 border border-berry-500/20 font-extrabold text-xs transition active:scale-95"
+          >
+            <span>🔄</span>
+            <span>Re-roll Week</span>
+          </button>
+          <button
+            type="button"
+            onclick="clearEntireWeek()"
+            class="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-1 px-3 rounded-xl text-stone-500 hover:text-rose-600 hover:bg-rose-50 font-bold text-xs transition"
+          >
+            Clear Week
+          </button>
+        </div>
+      </div>
+
+      <!-- 7-Day Responsive Grid -->
+      <div id="weekly-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- 4. MOBILE GROCERY PANEL (Mobile 'Grocery' Tab only; Desktop uses Modal) -->
+    <section id="panel-grocery" class="hidden md:hidden bg-white/95 rounded-3xl border border-mint-500/30 border-t-4 border-t-mint-500 p-4 shadow-md space-y-4">
+      <div class="flex items-center justify-between gap-2">
+        <div>
+          <h2 class="text-base font-extrabold text-stone-900 flex items-center gap-1.5">
+            <span>🛒</span> Weekly Grocery List
+          </h2>
+          <p id="mobile-grocery-subtitle" class="text-xs text-stone-500 mt-0.5">Aggregated from this week's meals</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onclick="copyGroceryList()"
+          class="flex-1 px-4 rounded-xl bg-mint-500 hover:bg-mint-600 text-white text-xs font-extrabold shadow-xs transition active:scale-95"
+        >
+          📋 Copy Grocery List
+        </button>
+        <button
+          type="button"
+          onclick="clearCheckedGroceries()"
+          class="px-3.5 rounded-xl border border-stone-200 bg-white text-stone-600 text-xs font-bold transition active:scale-95"
+        >
+          Clear Checked
+        </button>
+      </div>
+
+      <div id="mobile-grocery-list" class="space-y-2">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- 5. ZERO-SETUP REAL-TIME SYNC & SHARE PANEL (Desktop Bar + Mobile 'Sync' Tab) -->
+    <section id="panel-sync" class="hidden md:block bg-white/95 rounded-3xl border border-mint-500/30 p-4 sm:p-5 shadow-xs">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="text-base font-extrabold text-stone-900 flex items-center gap-1.5">
+              <span>⚡</span> Real-Time Family Sync
+            </h2>
+            <span id="panel-sync-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-mint-100 text-mint-700 text-xs font-extrabold">
+              <span id="panel-sync-dot" class="w-2 h-2 rounded-full bg-mint-500 sync-pulse"></span>
+              <span id="panel-sync-text">Live Synced • GARREAU</span>
+            </span>
+          </div>
+          <p class="text-xs text-stone-500">
+            Zero setup needed. Both phones automatically sync live in room <strong class="text-stone-700" id="room-desc-code">GARREAU</strong> whenever meals or days change—or tap <strong>Share Menu</strong> to send a direct snapshot link.
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <form onsubmit="handleRoomChange(event)" class="flex items-center gap-2">
+            <input
+              type="text"
+              id="room-code-input"
+              maxlength="24"
+              value="GARREAU"
+              aria-label="Household Room Code"
+              placeholder="Room code..."
+              class="w-full sm:w-36 px-3.5 py-2 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white font-extrabold uppercase text-stone-900 focus:outline-none focus:ring-2 focus:ring-berry-500"
+            />
+            <button
+              type="submit"
+              class="px-4 rounded-xl bg-berry-500 hover:bg-berry-600 text-white text-xs font-extrabold shrink-0 transition active:scale-95"
+            >
+              Switch Room
+            </button>
+          </form>
+
+          <button
+            type="button"
+            onclick="shareMenuLink()"
+            class="px-4 rounded-xl bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white text-xs font-extrabold shadow-xs shadow-coral-500/20 flex items-center justify-center gap-1.5 transition active:scale-95"
+          >
+            <span>📲</span>
+            <span>Share Menu Link</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================= -->
+  <!-- MOBILE NATIVE BOTTOM TAB BAR (< 768px)                    -->
+  <!-- ========================================================= -->
+  <nav aria-label="Mobile App Navigation" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-orange-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] mobile-bottom-bar">
+    <div class="grid grid-cols-5 gap-1 px-2 pt-1.5">
+      <button type="button" id="tab-btn-spin" onclick="switchMobileTab('spin')" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-coral-600 bg-coral-50 font-extrabold transition active:scale-95">
+        <span class="text-lg leading-none">🎡</span>
+        <span class="text-[11px] mt-1">Spin</span>
+      </button>
+
+      <button type="button" id="tab-btn-week" onclick="switchMobileTab('week')" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-stone-500 font-semibold transition active:scale-95">
+        <span class="text-lg leading-none">📅</span>
+        <span class="text-[11px] mt-1">Week</span>
+      </button>
+
+      <button type="button" id="tab-btn-meals" onclick="switchMobileTab('meals')" class="relative flex flex-col items-center justify-center py-1.5 rounded-2xl text-stone-500 font-semibold transition active:scale-95">
+        <span class="text-lg leading-none">🍲</span>
+        <span class="text-[11px] mt-1">Meals</span>
+        <span id="tab-badge-meals" class="absolute top-1 right-2 px-1.5 py-0.2 text-[10px] font-extrabold rounded-full bg-berry-500 text-white">0</span>
+      </button>
+
+      <button type="button" id="tab-btn-grocery" onclick="switchMobileTab('grocery')" class="relative flex flex-col items-center justify-center py-1.5 rounded-2xl text-stone-500 font-semibold transition active:scale-95">
+        <span class="text-lg leading-none">🛒</span>
+        <span class="text-[11px] mt-1">Grocery</span>
+        <span id="tab-badge-grocery" class="absolute top-1 right-2 px-1.5 py-0.2 text-[10px] font-extrabold rounded-full bg-mint-500 text-white">0</span>
+      </button>
+
+      <button type="button" id="tab-btn-sync" onclick="switchMobileTab('sync')" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-stone-500 font-semibold transition active:scale-95">
+        <span class="text-lg leading-none">⚡</span>
+        <span class="text-[11px] mt-1">Sync</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: EDIT DAY (PICK SAVED MEAL, RE-ROLL, OR CUSTOM)     -->
+  <!-- ========================================================= -->
+  <div id="day-edit-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-900/45 backdrop-blur-xs">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-orange-200/80 animate-pop max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <span class="text-[11px] font-extrabold uppercase tracking-wider text-coral-500">Edit Day</span>
+          <h3 id="day-edit-title" class="text-lg font-extrabold text-stone-900">Monday</h3>
+        </div>
+        <button type="button" onclick="closeDayEditModal()" aria-label="Close" class="px-3 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition">
+          ✕
+        </button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 space-y-5 py-4 pr-0.5">
+        <!-- Custom Dinner / Note Form -->
+        <form onsubmit="saveCustomDayEntry(event)" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label for="day-custom-name" class="text-xs font-extrabold uppercase tracking-wider text-stone-500">
+              Custom Dinner / Note
+            </label>
+            <button type="button" onclick="rollRandomForModalDay()" class="text-xs font-extrabold text-coral-600 hover:text-coral-500 px-2.5 rounded-lg bg-coral-50">
+              🎲 Pick Random
+            </button>
+          </div>
+          <input
+            type="text"
+            id="day-custom-name"
+            required
+            placeholder="e.g., Leftovers, Eat Out, Tacos..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white font-semibold text-stone-900 focus:outline-none focus:ring-2 focus:ring-coral-500"
+          />
+          <textarea
+            id="day-custom-ingredients"
+            rows="2"
+            placeholder="Ingredients or notes for this day (optional)..."
+            class="w-full px-3.5 py-2 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white text-stone-700 focus:outline-none focus:ring-2 focus:ring-coral-500"
+          ></textarea>
+          <div class="flex items-center gap-2">
+            <button type="submit" class="flex-1 px-4 rounded-xl bg-gradient-to-r from-coral-500 to-orange-500 hover:from-coral-600 hover:to-orange-600 text-white text-xs font-extrabold shadow-xs transition">
+              Save for <span id="day-save-btn-label">Monday</span>
+            </button>
+            <button type="button" onclick="clearDayFromModal()" class="px-3.5 rounded-xl border border-stone-200 hover:bg-rose-50 hover:text-rose-600 text-stone-600 text-xs font-bold transition">
+              Clear Day
+            </button>
+          </div>
+        </form>
+
+        <!-- Pick From Saved Meals -->
+        <div class="pt-4 border-t border-stone-100 space-y-2.5">
+          <p class="text-xs font-extrabold uppercase tracking-wider text-stone-500">Or Pick From Saved Dinners</p>
+          <div id="day-saved-meals-list" class="space-y-2">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: EDIT EXISTING DINNER IN LIBRARY                    -->
+  <!-- ========================================================= -->
+  <div id="edit-meal-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-900/45 backdrop-blur-xs">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-orange-200/80 animate-pop">
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <h3 class="text-lg font-extrabold text-stone-900">Edit Dinner Option</h3>
+        <button type="button" onclick="closeEditMealModal()" aria-label="Close" class="px-3 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition">
+          ✕
+        </button>
+      </div>
+
+      <form onsubmit="saveEditedMeal(event)" class="mt-4 space-y-4">
+        <input type="hidden" id="edit-meal-id" />
+        <div>
+          <label for="edit-meal-name" class="block text-xs font-extrabold text-stone-700 mb-1">Dinner Name *</label>
+          <input
+            type="text"
+            id="edit-meal-name"
+            required
+            maxlength="60"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-stone-900 focus:outline-none focus:ring-2 focus:ring-berry-500"
+          />
+        </div>
+        <div>
+          <label for="edit-meal-ingredients" class="block text-xs font-extrabold text-stone-700 mb-1">Ingredients (Optional)</label>
+          <textarea
+            id="edit-meal-ingredients"
+            rows="3"
+            placeholder="Comma or new line separated..."
+            class="w-full px-3.5 py-2 rounded-xl border border-stone-200 text-stone-900 focus:outline-none focus:ring-2 focus:ring-berry-500"
+          ></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeEditMealModal()" class="px-4 rounded-xl border border-stone-200 text-stone-600 text-xs font-bold">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 rounded-xl bg-berry-500 hover:bg-berry-600 text-white text-xs font-extrabold shadow-xs">
+            Update Dinner
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: DESKTOP GROCERY LIST                               -->
+  <!-- ========================================================= -->
+  <div id="grocery-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-stone-900/45 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-mint-500/30 animate-pop max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <h3 class="text-lg font-extrabold text-stone-900 flex items-center gap-1.5">
+            <span>🛒</span> Weekly Grocery List
+          </h3>
+          <p id="desktop-grocery-subtitle" class="text-xs text-stone-500">Aggregated from this week's meals</p>
+        </div>
+        <button type="button" onclick="closeGroceryModal()" aria-label="Close" class="px-3 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition">
+          ✕
+        </button>
+      </div>
+
+      <div class="py-3 flex items-center justify-between border-b border-stone-100 gap-2">
+        <button type="button" onclick="copyGroceryList()" class="px-4 rounded-xl bg-mint-500 hover:bg-mint-600 text-white text-xs font-extrabold shadow-2xs transition">
+          📋 Copy List
+        </button>
+        <button type="button" onclick="clearCheckedGroceries()" class="text-xs font-bold text-stone-500 hover:text-stone-800 px-3">
+          Clear Checked
+        </button>
+      </div>
+
+      <div id="desktop-grocery-list" class="flex-1 overflow-y-auto py-3 space-y-2">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- APPLICATION JAVASCRIPT (GUNDB LIVE SYNC + URL SNAPSHOT)   -->
+  <!-- ========================================================= -->
+  <script>
+    // -----------------------------------------------------------
+    // 1. CONSTANTS & APPLICATION STATE
+    // -----------------------------------------------------------
+    const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    const DAY_STYLES = {
+      Monday:    { bar: 'bg-coral-500',   header: 'bg-coral-50/80',   text: 'text-coral-600' },
+      Tuesday:   { bar: 'bg-amber-500',   header: 'bg-amber-50/80',   text: 'text-amber-700' },
+      Wednesday: { bar: 'bg-mint-500',    header: 'bg-mint-50/80',    text: 'text-mint-700' },
+      Thursday:  { bar: 'bg-sky-500',     header: 'bg-sky-50/80',     text: 'text-sky-700' },
+      Friday:    { bar: 'bg-berry-500',   header: 'bg-berry-50/80',   text: 'text-berry-600' },
+      Saturday:  { bar: 'bg-pink-500',    header: 'bg-pink-50/80',    text: 'text-pink-600' },
+      Sunday:    { bar: 'bg-orange-500',  header: 'bg-orange-50/80',  text: 'text-orange-600' }
+    };
+
+    const WHEEL_COLORS = [
+      '#FF5A36', '#10B981', '#8B5CF6', '#F59E0B',
+      '#EC4899', '#0EA5E9', '#F97316', '#14B8A6'
+    ];
+
+    const STORAGE_KEYS = {
+      MEALS: 'wfd_gundb_meals_v4',
+      PLAN: 'wfd_gundb_plan_v4',
+      CHECKED: 'wfd_gundb_checked_v4',
+      ROOM: 'wfd_gundb_room_v4',
+      UPDATED_AT: 'wfd_gundb_updated_v4'
+    };
+
+    const DEFAULT_ROOM_CODE = 'GARREAU';
+
+    // Public GunDB Relay Peers (CORS-enabled, zero API keys, zero setup)
+    const GUN_PEERS = [
+      'https://gun-manhattan.herokuapp.com/gun',
+      'https://peer.wallie.io/gun',
+      'https://gundb-relay-mlcl.onrender.com/gun',
+      'https://gun-us.herokuapp.com/gun'
+    ];
+
+    // Core Data State (Starts completely empty - zero pre-loaded meals)
+    let meals = []; // [{ id, name, ingredients: [], updatedAt }]
+    let weeklyPlan = createEmptyPlan(); // { Monday: { mealId, customName, customIngredients, updatedAt } | null, ... }
+    let checkedGroceries = {}; // { "item_key": true }
+    let lastUpdatedAt = 0;
+
+    // UI & Wheel State
+    let activeMobileTab = 'spin';
+    let isSpinning = false;
+    let currentWheelAngle = 0;
+    let winnerMealId = null;
+    let editingDayName = null;
+
+    // GunDB Real-Time Sync State
+    let gunInstance = null;
+    let roomNode = null;
+    let activeRoomCode = DEFAULT_ROOM_CODE;
+    let activeSubscription = null;
+    let heartbeatTimer = null;
+    let connectedPeerCount = 0;
+
+    function createEmptyPlan() {
+      const plan = {};
+      DAYS_OF_WEEK.forEach(d => { plan[d] = null; });
+      return plan;
+    }
+
+    // -----------------------------------------------------------
+    // 2. INITIALIZATION & RESPONSIVE LAYOUT
+    // -----------------------------------------------------------
+    function initApp() {
+      resolveRoomCode();
+      loadFromLocalStorage();
+      const loadedFromShareHash = tryImportMenuFromUrlHash();
+      updateTodayLabels();
+      syncAllViews();
+      applyResponsiveLayout();
+
+      window.addEventListener('resize', () => {
+        applyResponsiveLayout();
+        renderWheelCanvas();
+      });
+
+      // Listen for storage updates across browser tabs on same device
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEYS.MEALS || e.key === STORAGE_KEYS.PLAN || e.key === STORAGE_KEYS.CHECKED) {
+          loadFromLocalStorage();
+          syncAllViews();
+        }
+      });
+
+      // Start zero-setup real-time GunDB cloud sync
+      initGunRealtimeSync(loadedFromShareHash);
+    }
+
+    function applyResponsiveLayout() {
+      const isDesktop = window.innerWidth >= 768;
+      const panels = {
+        spin: document.getElementById('panel-spin'),
+        week: document.getElementById('panel-week'),
+        meals: document.getElementById('panel-meals'),
+        grocery: document.getElementById('panel-grocery'),
+        sync: document.getElementById('panel-sync')
+      };
+
+      if (isDesktop) {
+        if (panels.spin) panels.spin.classList.remove('hidden');
+        if (panels.week) panels.week.classList.remove('hidden');
+        if (panels.meals) panels.meals.classList.remove('hidden');
+        if (panels.sync) panels.sync.classList.remove('hidden');
+        if (panels.grocery) panels.grocery.classList.add('hidden');
+      } else {
+        Object.entries(panels).forEach(([key, el]) => {
+          if (!el) return;
+          if (key === activeMobileTab) {
+            el.classList.remove('hidden');
+          } else {
+            el.classList.add('hidden');
+          }
+        });
+      }
+
+      updateMobileTabStyles();
+      if (isDesktop || activeMobileTab === 'spin') {
+        requestAnimationFrame(() => renderWheelCanvas());
+      }
+    }
+
+    function switchMobileTab(tabName) {
+      activeMobileTab = tabName;
+      applyResponsiveLayout();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goToAddMeals() {
+      if (window.innerWidth < 768) {
+        switchMobileTab('meals');
+      }
+      setTimeout(() => {
+        const input = document.getElementById('new-meal-name');
+        if (input) input.focus();
+      }, 60);
+    }
+
+    function handleStatusPillClick() {
+      if (window.innerWidth < 768) {
+        switchMobileTab('sync');
+      } else {
+        const syncPanel = document.getElementById('panel-sync');
+        if (syncPanel) syncPanel.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function updateMobileTabStyles() {
+      const tabs = ['spin', 'week', 'meals', 'grocery', 'sync'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (!btn) return;
+        if (t === activeMobileTab) {
+          btn.className = 'relative flex flex-col items-center justify-center py-1.5 rounded-2xl text-coral-600 bg-coral-50 font-extrabold transition active:scale-95';
+        } else {
+          btn.className = 'relative flex flex-col items-center justify-center py-1.5 rounded-2xl text-stone-500 font-semibold transition active:scale-95';
+        }
+      });
+    }
+
+    function getTodayDayName() {
+      const jsDay = new Date().getDay();
+      const index = jsDay === 0 ? 6 : jsDay - 1;
+      return DAYS_OF_WEEK[index];
+    }
+
+    function updateTodayLabels() {
+      const today = getTodayDayName();
+      const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+      const sub = document.getElementById('today-subtitle');
+      const tonightSpan = document.getElementById('winner-tonight-label');
+      const daySelect = document.getElementById('winner-day-select');
+
+      if (sub) sub.textContent = `Today is ${dateStr}`;
+      if (tonightSpan) tonightSpan.textContent = today;
+      if (daySelect) daySelect.value = today;
+    }
+
+    // -----------------------------------------------------------
+    // 3. ZERO-SETUP GUNDB REAL-TIME SYNC + URL HASH SNAPSHOT
+    // -----------------------------------------------------------
+    function sanitizeRoomCode(raw) {
+      const cleaned = String(raw || '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9_-]/g, '');
+      return cleaned || DEFAULT_ROOM_CODE;
+    }
+
+    function resolveRoomCode() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlRoom = params.get('room');
+        if (urlRoom) {
+          activeRoomCode = sanitizeRoomCode(urlRoom);
+          localStorage.setItem(STORAGE_KEYS.ROOM, activeRoomCode);
+        } else {
+          const savedRoom = localStorage.getItem(STORAGE_KEYS.ROOM);
+          activeRoomCode = sanitizeRoomCode(savedRoom || DEFAULT_ROOM_CODE);
+        }
+      } catch (e) {
+        activeRoomCode = DEFAULT_ROOM_CODE;
+      }
+      updateRoomUI();
+    }
+
+    function updateRoomUI() {
+      const input = document.getElementById('room-code-input');
+      const desc = document.getElementById('room-desc-code');
+      if (input) input.value = activeRoomCode;
+      if (desc) desc.textContent = activeRoomCode;
+    }
+
+    function setSyncStatus(isConnected, labelText) {
+      const headerDot = document.getElementById('header-sync-dot');
+      const headerLabel = document.getElementById('header-sync-label');
+      const panelBadge = document.getElementById('panel-sync-badge');
+      const panelDot = document.getElementById('panel-sync-dot');
+      const panelText = document.getElementById('panel-sync-text');
+
+      if (headerLabel) headerLabel.textContent = labelText;
+      if (panelText) panelText.textContent = labelText;
+
+      if (isConnected) {
+        if (headerDot) headerDot.className = 'w-2 h-2 rounded-full bg-mint-500 sync-pulse';
+        if (panelDot) panelDot.className = 'w-2 h-2 rounded-full bg-mint-500 sync-pulse';
+        if (panelBadge) panelBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-mint-100 text-mint-700 text-xs font-extrabold';
+      } else {
+        if (headerDot) headerDot.className = 'w-2 h-2 rounded-full bg-amber-500';
+        if (panelDot) panelDot.className = 'w-2 h-2 rounded-full bg-amber-500';
+        if (panelBadge) panelBadge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-extrabold';
+      }
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const rawMeals = localStorage.getItem(STORAGE_KEYS.MEALS);
+        const rawPlan = localStorage.getItem(STORAGE_KEYS.PLAN);
+        const rawChecked = localStorage.getItem(STORAGE_KEYS.CHECKED);
+        const rawUpdated = localStorage.getItem(STORAGE_KEYS.UPDATED_AT);
+
+        if (rawMeals) meals = JSON.parse(rawMeals) || [];
+        if (rawPlan) {
+          const parsedPlan = JSON.parse(rawPlan) || {};
+          weeklyPlan = { ...createEmptyPlan(), ...parsedPlan };
+        }
+        if (rawChecked) checkedGroceries = JSON.parse(rawChecked) || {};
+        if (rawUpdated) lastUpdatedAt = Number(rawUpdated) || 0;
+      } catch (err) {
+        console.warn('LocalStorage read fallback:', err);
+      }
+    }
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.MEALS, JSON.stringify(meals));
+        localStorage.setItem(STORAGE_KEYS.PLAN, JSON.stringify(weeklyPlan));
+        localStorage.setItem(STORAGE_KEYS.CHECKED, JSON.stringify(checkedGroceries));
+        localStorage.setItem(STORAGE_KEYS.UPDATED_AT, String(lastUpdatedAt));
+        localStorage.setItem(STORAGE_KEYS.ROOM, activeRoomCode);
+      } catch (err) {
+        console.warn('LocalStorage write fallback:', err);
+      }
+    }
+
+    function initGunRealtimeSync(forcePushInitial = false) {
+      if (typeof Gun === 'undefined') {
+        setSyncStatus(false, `Offline Backup • ${activeRoomCode}`);
+        return;
+      }
+
+      try {
+        gunInstance = Gun({
+          peers: GUN_PEERS,
+          localStorage: false // We manage our own deterministic localStorage snapshot
+        });
+
+        gunInstance.on('hi', () => {
+          connectedPeerCount++;
+          setSyncStatus(true, `Live Synced • ${activeRoomCode}`);
+        });
+
+        gunInstance.on('bye', () => {
+          connectedPeerCount = Math.max(0, connectedPeerCount - 1);
+          if (connectedPeerCount === 0) {
+            setSyncStatus(true, `Live Synced • ${activeRoomCode}`);
+          }
+        });
+
+        subscribeToGunRoom(activeRoomCode, forcePushInitial);
+      } catch (err) {
+        console.warn('GunDB init fallback:', err);
+        setSyncStatus(false, `Offline Backup • ${activeRoomCode}`);
+      }
+    }
+
+    function subscribeToGunRoom(code, forcePushInitial = false) {
+      activeRoomCode = sanitizeRoomCode(code);
+      updateRoomUI();
+      saveToLocalStorage();
+
+      if (!gunInstance) return;
+
+      if (activeSubscription && typeof activeSubscription.off === 'function') {
+        activeSubscription.off();
+      }
+      if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+      }
+
+      setSyncStatus(true, `Live Synced • ${activeRoomCode}`);
+
+      // Namespace cleanly so room 'GARREAU' is completely isolated
+      roomNode = gunInstance.get('whats_for_dinner_live_v4').get(`room_${activeRoomCode}`);
+
+      // 1. Fetch existing state once on join so opening on a second phone immediately pulls existing meals
+      roomNode.once((remoteData) => {
+        if (remoteData && remoteData.payload) {
+          applyIncomingGunPayload(remoteData.payload, remoteData.updatedAt || 0);
+        } else if (meals.length > 0 || Object.values(weeklyPlan).some(Boolean)) {
+          // Remote room is brand new and this phone has meals -> seed remote room
+          pushStateToGun();
+        }
+      });
+
+      if (forcePushInitial) {
+        lastUpdatedAt = Date.now();
+        saveToLocalStorage();
+        pushStateToGun();
+      }
+
+      // 2. Real-time live listener (.on) for instant updates whenever either phone makes a change
+      activeSubscription = roomNode.on((remoteData) => {
+        if (!remoteData || !remoteData.payload) return;
+        applyIncomingGunPayload(remoteData.payload, remoteData.updatedAt || 0);
+      });
+
+      // 3. Lightweight periodic re-sync pulse (every 8s) for mobile cellular reconnection resilience
+      heartbeatTimer = setInterval(() => {
+        if (!roomNode) return;
+        roomNode.once((remoteData) => {
+          if (remoteData && remoteData.payload) {
+            applyIncomingGunPayload(remoteData.payload, remoteData.updatedAt || 0);
+          }
+        });
+      }, 8000);
+    }
+
+    function applyIncomingGunPayload(payloadStr, remoteTimestamp) {
+      const incomingTime = Number(remoteTimestamp) || 0;
+      if (incomingTime <= lastUpdatedAt) return;
+
+      try {
+        const parsed = JSON.parse(payloadStr);
+        if (!parsed || typeof parsed !== 'object') return;
+
+        if (Array.isArray(parsed.meals)) {
+          meals = parsed.meals;
+        }
+        if (parsed.weeklyPlan && typeof parsed.weeklyPlan === 'object') {
+          weeklyPlan = { ...createEmptyPlan(), ...parsed.weeklyPlan };
+        }
+        if (parsed.checkedGroceries && typeof parsed.checkedGroceries === 'object') {
+          checkedGroceries = parsed.checkedGroceries;
+        }
+
+        lastUpdatedAt = incomingTime;
+        saveToLocalStorage();
+        syncAllViews();
+        setSyncStatus(true, `Live Synced • ${activeRoomCode}`);
+      } catch (err) {
+        console.warn('Malformed incoming sync payload ignored:', err);
+      }
+    }
+
+    function pushStateToGun() {
+      if (!roomNode) return;
+      try {
+        const serialized = JSON.stringify({
+          meals,
+          weeklyPlan,
+          checkedGroceries
+        });
+        roomNode.put({
+          payload: serialized,
+          updatedAt: lastUpdatedAt
+        });
+        setSyncStatus(true, `Live Synced • ${activeRoomCode}`);
+      } catch (err) {
+        console.warn('GunDB push error:', err);
+      }
+    }
+
+    function persistChanges() {
+      lastUpdatedAt = Date.now();
+      saveToLocalStorage();
+      syncAllViews();
+      pushStateToGun();
+    }
+
+    function handleRoomChange(event) {
+      event.preventDefault();
+      const input = document.getElementById('room-code-input');
+      const nextCode = sanitizeRoomCode(input.value);
+      if (nextCode === activeRoomCode) {
+        showToast(`Already in room ${nextCode}`, '✅');
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', nextCode);
+      url.hash = '';
+      window.history.replaceState({}, '', url.toString());
+
+      // Reset timestamp so joining the new room accepts its remote state cleanly
+      lastUpdatedAt = 0;
+      subscribeToGunRoom(nextCode, false);
+      showToast(`Joined live room "${nextCode}"`, '⚡');
+    }
+
+    // 1-Tap Share Link (Carries ?room=CODE AND compressed #menu= snapshot for instant opening)
+    function encodeUtf8Base64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function decodeUtf8Base64(b64url) {
+      let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return new TextDecoder().decode(bytes);
+    }
+
+    function tryImportMenuFromUrlHash() {
+      try {
+        const hash = window.location.hash || '';
+        if (!hash.includes('menu=')) return false;
+
+        const match = hash.match(/menu=([A-Za-z0-9\-_]+)/);
+        if (!match || !match[1]) return false;
+
+        const jsonStr = decodeUtf8Base64(match[1]);
+        const data = JSON.parse(jsonStr);
+        if (!data || typeof data !== 'object') return false;
+
+        if (Array.isArray(data.m)) meals = data.m;
+        if (data.p && typeof data.p === 'object') {
+          weeklyPlan = { ...createEmptyPlan(), ...data.p };
+        }
+        if (data.c && typeof data.c === 'object') {
+          checkedGroceries = data.c;
+        }
+
+        lastUpdatedAt = Date.now();
+        saveToLocalStorage();
+
+        // Clean hash from URL bar after importing so refreshes stay clean
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.hash = '';
+        cleanUrl.searchParams.set('room', activeRoomCode);
+        window.history.replaceState({}, '', cleanUrl.toString());
+
+        showToast(`Loaded shared menu into ${activeRoomCode}!`, '🎉');
+        return true;
+      } catch (err) {
+        console.warn('Could not parse shared menu link:', err);
+        return false;
+      }
+    }
+
+    function buildShareableUrl() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', activeRoomCode);
+      const compactPayload = JSON.stringify({
+        m: meals,
+        p: weeklyPlan,
+        c: checkedGroceries
+      });
+      url.hash = `menu=${encodeUtf8Base64(compactPayload)}`;
+      return url.toString();
+    }
+
+    function shareMenuLink() {
+      const shareUrl = buildShareableUrl();
+      const shareData = {
+        title: "What's For Dinner?",
+        text: `Here is our dinner list & weekly menu (Live Room: ${activeRoomCode}):`,
+        url: shareUrl
+      };
+
+      if (navigator.share) {
+        navigator.share(shareData)
+          .then(() => showToast('Shared menu link!', '📲'))
+          .catch((err) => {
+            if (err && err.name !== 'AbortError') {
+              copyTextSafely(shareUrl, `Menu link copied! (Room: ${activeRoomCode})`);
+            }
+          });
+      } else {
+        copyTextSafely(shareUrl, `Menu link copied! Text it to sync (${activeRoomCode})`);
+      }
+    }
+
+    // -----------------------------------------------------------
+    // 4. DINNER LIBRARY CRUD (USER MEALS ONLY)
+    // -----------------------------------------------------------
+    function parseIngredients(rawText) {
+      if (!rawText) return [];
+      return rawText
+        .split(/[\n,]+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
+    function generateId() {
+      return 'meal_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+    }
+
+    function handleAddMeal(event) {
+      event.preventDefault();
+      const nameInput = document.getElementById('new-meal-name');
+      const ingInput = document.getElementById('new-meal-ingredients');
+
+      const name = nameInput.value.trim();
+      if (!name) return;
+
+      const ingredients = parseIngredients(ingInput.value);
+      meals.unshift({
+        id: generateId(),
+        name,
+        ingredients,
+        updatedAt: Date.now()
+      });
+
+      nameInput.value = '';
+      ingInput.value = '';
+
+      persistChanges();
+      showToast(`Added "${name}"`, '🍲');
+    }
+
+    function openEditMealModal(mealId) {
+      const meal = meals.find(m => m.id === mealId);
+      if (!meal) return;
+
+      document.getElementById('edit-meal-id').value = meal.id;
+      document.getElementById('edit-meal-name').value = meal.name;
+      document.getElementById('edit-meal-ingredients').value = (meal.ingredients || []).join(', ');
+
+      const modal = document.getElementById('edit-meal-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEditMealModal() {
+      const modal = document.getElementById('edit-meal-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveEditedMeal(event) {
+      event.preventDefault();
+      const id = document.getElementById('edit-meal-id').value;
+      const name = document.getElementById('edit-meal-name').value.trim();
+      const ingredients = parseIngredients(document.getElementById('edit-meal-ingredients').value);
+
+      if (!name) return;
+
+      const idx = meals.findIndex(m => m.id === id);
+      if (idx !== -1) {
+        meals[idx] = { ...meals[idx], name, ingredients, updatedAt: Date.now() };
+      }
+
+      closeEditMealModal();
+      persistChanges();
+      showToast(`Updated "${name}"`, '✏️');
+    }
+
+    function deleteMeal(mealId) {
+      const meal = meals.find(m => m.id === mealId);
+      if (!meal) return;
+
+      meals = meals.filter(m => m.id !== mealId);
+
+      // Keep any scheduled day intact as a standalone custom entry
+      DAYS_OF_WEEK.forEach(day => {
+        const slot = weeklyPlan[day];
+        if (slot && slot.mealId === mealId) {
+          weeklyPlan[day] = {
+            mealId: null,
+            customName: meal.name,
+            customIngredients: [...(meal.ingredients || [])],
+            updatedAt: Date.now()
+          };
+        }
+      });
+
+      if (winnerMealId === mealId) {
+        winnerMealId = null;
+        document.getElementById('winner-card').classList.add('hidden');
+      }
+
+      persistChanges();
+      showToast(`Removed "${meal.name}"`, '🗑️');
+    }
+
+    // -----------------------------------------------------------
+    // 5. SPIN THE WHEEL (DPI SCALING + ZERO 0x0 CANVAS BUG)
+    // -----------------------------------------------------------
+    function renderWheelCanvas() {
+      const canvas = document.getElementById('dinner-wheel');
+      if (!canvas) return;
+
+      const isSmallScreen = window.innerWidth < 400;
+      const cssSize = isSmallScreen ? 245 : 280;
+      canvas.style.width = `${cssSize}px`;
+      canvas.style.height = `${cssSize}px`;
+
+      const dpr = Math.max(window.devicePixelRatio || 1, 1);
+      const targetPixelSize = Math.round(cssSize * dpr);
+
+      if (canvas.width !== targetPixelSize || canvas.height !== targetPixelSize) {
+        canvas.width = targetPixelSize;
+        canvas.height = targetPixelSize;
+      }
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const cx = cssSize / 2;
+      const cy = cssSize / 2;
+      const radius = cssSize / 2 - 4;
+
+      ctx.clearRect(0, 0, cssSize, cssSize);
+
+      if (meals.length === 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFF7ED';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#FED7AA';
+        ctx.stroke();
+
+        ctx.fillStyle = '#78716C';
+        ctx.font = '700 13px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Add dinners to spin!', cx, cy - 38);
+        ctx.font = '500 11px Inter, sans-serif';
+        ctx.fillStyle = '#A8A29E';
+        ctx.fillText('Only your meals appear here', cx, cy + 42);
+        ctx.restore();
+        return;
+      }
+
+      const sliceCount = meals.length;
+      const arc = (Math.PI * 2) / sliceCount;
+
+      for (let i = 0; i < sliceCount; i++) {
+        const startAngle = currentWheelAngle + i * arc;
+        const endAngle = startAngle + arc;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length];
+        ctx.fill();
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(startAngle + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = sliceCount > 8 ? '700 11px Inter, sans-serif' : '800 12px Inter, sans-serif';
+
+        const maxChars = sliceCount > 8 ? 12 : 15;
+        let label = meals[i].name;
+        if (label.length > maxChars) {
+          label = label.slice(0, maxChars - 1) + '…';
+        }
+        ctx.fillText(label, radius - 14, 0);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function triggerWheelSpin() {
+      if (isSpinning) return;
+
+      if (meals.length === 0) {
+        showToast('Add at least one dinner option first!', '🍲');
+        goToAddMeals();
+        return;
+      }
+
+      isSpinning = true;
+      const spinBtn = document.getElementById('spin-btn');
+      const spinBtnText = document.getElementById('spin-btn-text');
+      if (spinBtn) spinBtn.disabled = true;
+      if (spinBtnText) spinBtnText.textContent = 'Spinning...';
+
+      const winnerCard = document.getElementById('winner-card');
+      if (winnerCard) winnerCard.classList.add('hidden');
+
+      const winningIndex = Math.floor(Math.random() * meals.length);
+      const sliceCount = meals.length;
+      const arc = (Math.PI * 2) / sliceCount;
+
+      const targetSliceCenter = winningIndex * arc + arc / 2;
+      const desiredNormalizedAngle = (-Math.PI / 2 - targetSliceCenter) % (Math.PI * 2);
+      const currentNormalized = currentWheelAngle % (Math.PI * 2);
+
+      let delta = desiredNormalizedAngle - currentNormalized;
+      if (delta <= 0) delta += Math.PI * 2;
+
+      const extraSpins = (5 + Math.floor(Math.random() * 3)) * Math.PI * 2;
+      const startAngle = currentWheelAngle;
+      const totalRotation = extraSpins + delta;
+      const durationMs = 2800;
+      const startTime = performance.now();
+
+      function animateFrame(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / durationMs, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 4);
+
+        currentWheelAngle = startAngle + totalRotation * easeOut;
+        renderWheelCanvas();
+
+        if (progress < 1) {
+          requestAnimationFrame(animateFrame);
+        } else {
+          isSpinning = false;
+          if (spinBtn) spinBtn.disabled = false;
+          if (spinBtnText) spinBtnText.textContent = '🎲 Spin the Wheel!';
+          onWheelLanded(meals[winningIndex]);
+        }
+      }
+
+      requestAnimationFrame(animateFrame);
+    }
+
+    function onWheelLanded(meal) {
+      if (!meal) return;
+      winnerMealId = meal.id;
+
+      const card = document.getElementById('winner-card');
+      const nameEl = document.getElementById('winner-meal-name');
+      const ingEl = document.getElementById('winner-ingredients');
+
+      nameEl.textContent = meal.name;
+
+      if (meal.ingredients && meal.ingredients.length > 0) {
+        ingEl.innerHTML = meal.ingredients.map(ing => `
+          <span class="px-2.5 py-0.5 rounded-full bg-white border border-amber-200 text-xs font-semibold text-stone-700">
+            ${escapeHtml(ing)}
+          </span>
+        `).join('');
+      } else {
+        ingEl.innerHTML = `<span class="text-xs text-stone-400 italic">No ingredients listed</span>`;
+      }
+
+      card.classList.remove('hidden');
+      launchConfetti();
+    }
+
+    function launchConfetti() {
+      const colors = ['#FF5A36', '#10B981', '#FBBF24', '#8B5CF6', '#EC4899'];
+      for (let i = 0; i < 24; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = `${15 + Math.random() * 70}%`;
+        piece.style.backgroundColor = colors[i % colors.length];
+        piece.style.animationDelay = `${Math.random() * 0.25}s`;
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 1500);
+      }
+    }
+
+    function assignWinnerToTonight() {
+      if (!winnerMealId) return;
+      assignMealToDay(getTodayDayName(), winnerMealId);
+    }
+
+    function assignWinnerToSelectedDay() {
+      if (!winnerMealId) return;
+      const select = document.getElementById('winner-day-select');
+      const day = select ? select.value : getTodayDayName();
+      assignMealToDay(day, winnerMealId);
+    }
+
+    function assignMealToDay(day, mealId) {
+      const meal = meals.find(m => m.id === mealId);
+      if (!meal) return;
+
+      weeklyPlan[day] = {
+        mealId: meal.id,
+        customName: null,
+        customIngredients: [],
+        updatedAt: Date.now()
+      };
+
+      persistChanges();
+      showToast(`Assigned "${meal.name}" to ${day}!`, '📅');
+    }
+
+    // -----------------------------------------------------------
+    // 6. WEEKLY PLANNER & INDIVIDUAL DAY EDITING
+    // -----------------------------------------------------------
+    function resolveDayMeal(day) {
+      const slot = weeklyPlan[day];
+      if (!slot) return null;
+
+      if (slot.mealId) {
+        const saved = meals.find(m => m.id === slot.mealId);
+        if (saved) {
+          return {
+            name: saved.name,
+            ingredients: saved.ingredients || [],
+            isCustom: false
+          };
+        }
+      }
+
+      if (slot.customName) {
+        return {
+          name: slot.customName,
+          ingredients: slot.customIngredients || [],
+          isCustom: true
+        };
+      }
+
+      return null;
+    }
+
+    function fillEmptyDaysRandomly() {
+      if (meals.length === 0) {
+        showToast('Add dinner options first before randomizing!', '🍲');
+        goToAddMeals();
+        return;
+      }
+
+      const emptyDays = DAYS_OF_WEEK.filter(d => !resolveDayMeal(d));
+      if (emptyDays.length === 0) {
+        showToast('All 7 days already have dinners planned!', '✅');
+        return;
+      }
+
+      const usedMealIds = new Set();
+      DAYS_OF_WEEK.forEach(d => {
+        if (weeklyPlan[d]?.mealId) usedMealIds.add(weeklyPlan[d].mealId);
+      });
+
+      emptyDays.forEach(day => {
+        let pool = meals.filter(m => !usedMealIds.has(m.id));
+        if (pool.length === 0) {
+          usedMealIds.clear();
+          pool = [...meals];
+        }
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        usedMealIds.add(chosen.id);
+
+        weeklyPlan[day] = {
+          mealId: chosen.id,
+          customName: null,
+          customIngredients: [],
+          updatedAt: Date.now()
+        };
+      });
+
+      persistChanges();
+      showToast(`Filled ${emptyDays.length} empty day${emptyDays.length === 1 ? '' : 's'}!`, '🎲');
+    }
+
+    function randomizeEntireWeek() {
+      if (meals.length === 0) {
+        showToast('Add dinner options first before randomizing!', '🍲');
+        goToAddMeals();
+        return;
+      }
+
+      const usedMealIds = new Set();
+      DAYS_OF_WEEK.forEach(day => {
+        let pool = meals.filter(m => !usedMealIds.has(m.id));
+        if (pool.length === 0) {
+          usedMealIds.clear();
+          pool = [...meals];
+        }
+        const chosen = pool[Math.floor(Math.random() * pool.length)];
+        usedMealIds.add(chosen.id);
+
+        weeklyPlan[day] = {
+          mealId: chosen.id,
+          customName: null,
+          customIngredients: [],
+          updatedAt: Date.now()
+        };
+      });
+
+      persistChanges();
+      showToast('Re-rolled the entire week!', '🔄');
+    }
+
+    function clearEntireWeek() {
+      weeklyPlan = createEmptyPlan();
+      persistChanges();
+      showToast('Cleared weekly schedule', '🧹');
+    }
+
+    function rerollSingleDay(day, event) {
+      if (event) event.stopPropagation();
+
+      if (meals.length === 0) {
+        showToast('Add dinner options first!', '🍲');
+        goToAddMeals();
+        return;
+      }
+
+      const currentSlot = weeklyPlan[day];
+      let pool = meals.filter(m => m.id !== currentSlot?.mealId);
+      if (pool.length === 0) pool = [...meals];
+
+      const chosen = pool[Math.floor(Math.random() * pool.length)];
+      weeklyPlan[day] = {
+        mealId: chosen.id,
+        customName: null,
+        customIngredients: [],
+        updatedAt: Date.now()
+      };
+
+      persistChanges();
+      showToast(`${day}: ${chosen.name}`, '🎲');
+    }
+
+    // Day Edit Modal
+    function openDayEditModal(day) {
+      editingDayName = day;
+      const resolved = resolveDayMeal(day);
+
+      document.getElementById('day-edit-title').textContent = day;
+      document.getElementById('day-save-btn-label').textContent = day;
+
+      const nameInput = document.getElementById('day-custom-name');
+      const ingInput = document.getElementById('day-custom-ingredients');
+
+      nameInput.value = resolved ? resolved.name : '';
+      ingInput.value = resolved && resolved.ingredients ? resolved.ingredients.join(', ') : '';
+
+      const savedList = document.getElementById('day-saved-meals-list');
+      if (meals.length === 0) {
+        savedList.innerHTML = `<p class="text-xs text-stone-400 italic">No saved dinners yet. Type a custom dinner above or add options in the Meals tab.</p>`;
+      } else {
+        savedList.innerHTML = meals.map(m => `
+          <button
+            type="button"
+            onclick="pickSavedMealForModalDay('${m.id}')"
+            class="w-full text-left px-3.5 py-2.5 rounded-xl border border-stone-200 hover:border-coral-400 hover:bg-coral-50/60 flex items-center justify-between gap-2 transition active:scale-[0.99]"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-bold text-stone-900 truncate">${escapeHtml(m.name)}</p>
+              ${m.ingredients?.length ? `<p class="text-xs text-stone-500 truncate">${escapeHtml(m.ingredients.join(', '))}</p>` : ''}
+            </div>
+            <span class="text-xs font-extrabold text-coral-600 shrink-0">Select</span>
+          </button>
+        `).join('');
+      }
+
+      const modal = document.getElementById('day-edit-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeDayEditModal() {
+      editingDayName = null;
+      const modal = document.getElementById('day-edit-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function saveCustomDayEntry(event) {
+      event.preventDefault();
+      if (!editingDayName) return;
+
+      const customName = document.getElementById('day-custom-name').value.trim();
+      if (!customName) return;
+
+      const customIngredients = parseIngredients(document.getElementById('day-custom-ingredients').value);
+
+      weeklyPlan[editingDayName] = {
+        mealId: null,
+        customName,
+        customIngredients,
+        updatedAt: Date.now()
+      };
+
+      const savedDay = editingDayName;
+      closeDayEditModal();
+      persistChanges();
+      showToast(`Saved "${customName}" for ${savedDay}`, '✅');
+    }
+
+    function pickSavedMealForModalDay(mealId) {
+      if (!editingDayName) return;
+      const targetDay = editingDayName;
+      closeDayEditModal();
+      assignMealToDay(targetDay, mealId);
+    }
+
+    function rollRandomForModalDay() {
+      if (!editingDayName) return;
+      if (meals.length === 0) {
+        showToast('Add dinner options first!', '🍲');
+        return;
+      }
+      const chosen = meals[Math.floor(Math.random() * meals.length)];
+      document.getElementById('day-custom-name').value = chosen.name;
+      document.getElementById('day-custom-ingredients').value = (chosen.ingredients || []).join(', ');
+    }
+
+    function clearDayFromModal() {
+      if (!editingDayName) return;
+      const targetDay = editingDayName;
+      weeklyPlan[targetDay] = null;
+      closeDayEditModal();
+      persistChanges();
+      showToast(`Cleared ${targetDay}`, '🧹');
+    }
+
+    // -----------------------------------------------------------
+    // 7. GROCERY LIST AGGREGATION
+    // -----------------------------------------------------------
+    function getAggregatedGroceries() {
+      const map = new Map();
+
+      DAYS_OF_WEEK.forEach(day => {
+        const resolved = resolveDayMeal(day);
+        if (!resolved || !resolved.ingredients) return;
+
+        resolved.ingredients.forEach(rawItem => {
+          const clean = rawItem.trim();
+          if (!clean) return;
+          const key = clean.toLowerCase();
+
+          if (!map.has(key)) {
+            map.set(key, {
+              key,
+              label: clean,
+              count: 1,
+              days: [day.slice(0, 3)]
+            });
+          } else {
+            const entry = map.get(key);
+            entry.count += 1;
+            if (!entry.days.includes(day.slice(0, 3))) {
+              entry.days.push(day.slice(0, 3));
+            }
+          }
+        });
+      });
+
+      return Array.from(map.values());
+    }
+
+    function toggleGroceryCheck(itemKey) {
+      if (checkedGroceries[itemKey]) {
+        delete checkedGroceries[itemKey];
+      } else {
+        checkedGroceries[itemKey] = true;
+      }
+      persistChanges();
+    }
+
+    function clearCheckedGroceries() {
+      checkedGroceries = {};
+      persistChanges();
+      showToast('Unchecked all grocery items', '🛒');
+    }
+
+    function copyGroceryList() {
+      const items = getAggregatedGroceries();
+      if (items.length === 0) {
+        showToast('No ingredients on this week\'s menu yet', '🛒');
+        return;
+      }
+
+      const lines = items.map(item => {
+        const mark = checkedGroceries[item.key] ? '[x]' : '[ ]';
+        const suffix = item.count > 1 ? ` (x${item.count})` : '';
+        return `${mark} ${item.label}${suffix}`;
+      });
+
+      const text = `Weekly Grocery List:\n${lines.join('\n')}`;
+      copyTextSafely(text, 'Grocery list copied to clipboard!');
+    }
+
+    function openGroceryModal() {
+      renderGroceryLists();
+      const modal = document.getElementById('grocery-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeGroceryModal() {
+      const modal = document.getElementById('grocery-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // -----------------------------------------------------------
+    // 8. RENDERING ALL VIEWS
+    // -----------------------------------------------------------
+    function syncAllViews() {
+      renderMealLibrary();
+      renderWeeklyGrid();
+      renderGroceryLists();
+      renderWheelCanvas();
+    }
+
+    function renderMealLibrary() {
+      const container = document.getElementById('meal-library-list');
+      const countBadge = document.getElementById('meal-count-badge');
+      const tabBadge = document.getElementById('tab-badge-meals');
+      const emptyWheelCta = document.getElementById('empty-wheel-cta');
+
+      if (countBadge) countBadge.textContent = `${meals.length} meal${meals.length === 1 ? '' : 's'}`;
+      if (tabBadge) tabBadge.textContent = meals.length;
+
+      if (meals.length === 0) {
+        if (emptyWheelCta) emptyWheelCta.classList.remove('hidden');
+        container.innerHTML = `
+          <div class="rounded-2xl border-2 border-dashed border-berry-500/25 bg-berry-50/40 p-6 text-center">
+            <p class="text-sm font-extrabold text-stone-800">Your dinner list is empty 🍽️</p>
+            <p class="text-xs text-stone-500 mt-1 leading-relaxed">
+              Add your favorite meals above. Only the dinners you add here will show up on the Spin Wheel and weekly randomizer.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      if (emptyWheelCta) emptyWheelCta.classList.add('hidden');
+
+      container.innerHTML = meals.map((meal, idx) => {
+        const dotColor = WHEEL_COLORS[idx % WHEEL_COLORS.length];
+        const hasIngs = meal.ingredients && meal.ingredients.length > 0;
+
+        return `
+          <div class="p-3.5 rounded-2xl border border-stone-200/90 bg-white hover:border-berry-500/40 shadow-2xs flex items-start justify-between gap-2.5 transition">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${dotColor};"></span>
+                <h3 class="text-sm font-extrabold text-stone-900 truncate">${escapeHtml(meal.name)}</h3>
+              </div>
+              ${hasIngs ? `
+                <p class="text-xs text-stone-500 mt-1 line-clamp-2">
+                  ${escapeHtml(meal.ingredients.join(', '))}
+                </p>
+              ` : `
+                <p class="text-[11px] text-stone-400 italic mt-0.5">No ingredients listed</p>
+              `}
+            </div>
+
+            <div class="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onclick="openEditMealModal('${meal.id}')"
+                aria-label="Edit ${escapeHtml(meal.name)}"
+                class="px-2.5 rounded-xl text-xs font-bold text-stone-600 hover:text-berry-600 hover:bg-berry-50 transition"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onclick="deleteMeal('${meal.id}')"
+                aria-label="Delete ${escapeHtml(meal.name)}"
+                class="px-2.5 rounded-xl text-xs font-bold text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderWeeklyGrid() {
+      const grid = document.getElementById('weekly-grid');
+      if (!grid) return;
+
+      const todayName = getTodayDayName();
+
+      grid.innerHTML = DAYS_OF_WEEK.map(day => {
+        const style = DAY_STYLES[day];
+        const isToday = day === todayName;
+        const resolved = resolveDayMeal(day);
+
+        return `
+          <div
+            onclick="openDayEditModal('${day}')"
+            role="button"
+            tabindex="0"
+            class="group bg-white rounded-3xl border ${isToday ? 'border-mint-500 ring-2 ring-mint-500/20' : 'border-orange-200/80'} overflow-hidden shadow-xs hover:shadow-md transition flex flex-col cursor-pointer"
+          >
+            <div class="h-1.5 w-full ${style.bar}"></div>
+
+            <div class="px-3.5 py-2.5 ${style.header} flex items-center justify-between gap-1.5 border-b border-stone-100">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-xs font-extrabold uppercase tracking-wider ${style.text}">${day}</span>
+                ${isToday ? `<span class="px-2 py-0.5 rounded-full bg-mint-500 text-white text-[10px] font-extrabold uppercase">Tonight</span>` : ''}
+              </div>
+
+              <button
+                type="button"
+                onclick="rerollSingleDay('${day}', event)"
+                title="Re-roll ${day}"
+                class="px-2 rounded-lg bg-white/80 hover:bg-white text-xs shadow-2xs transition active:scale-90"
+              >
+                🎲
+              </button>
+            </div>
+
+            <div class="p-3.5 flex-1 flex flex-col justify-between min-h-[104px]">
+              ${resolved ? `
+                <div>
+                  <p class="text-sm font-extrabold text-stone-900 leading-snug">${escapeHtml(resolved.name)}</p>
+                  ${resolved.ingredients?.length ? `
+                    <p class="text-xs text-stone-500 mt-1.5 line-clamp-2">
+                      ${escapeHtml(resolved.ingredients.join(', '))}
+                    </p>
+                  ` : ''}
+                </div>
+                <div class="mt-3 pt-2 border-t border-stone-100 flex items-center justify-between text-[11px] font-bold text-stone-400 group-hover:text-coral-600">
+                  <span>${resolved.isCustom ? 'Custom note' : 'Saved meal'}</span>
+                  <span>Edit →</span>
+                </div>
+              ` : `
+                <div class="flex-1 flex flex-col items-center justify-center text-center py-2">
+                  <span class="text-xs font-bold text-stone-400 group-hover:text-coral-600 transition">+ Tap to plan</span>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGroceryLists() {
+      const items = getAggregatedGroceries();
+      const desktopBadge = document.getElementById('desktop-grocery-badge');
+      const mobileBadge = document.getElementById('tab-badge-grocery');
+      const desktopSub = document.getElementById('desktop-grocery-subtitle');
+      const mobileSub = document.getElementById('mobile-grocery-subtitle');
+
+      if (desktopBadge) desktopBadge.textContent = items.length;
+      if (mobileBadge) mobileBadge.textContent = items.length;
+
+      const subText = items.length === 0
+        ? 'No ingredients on this week\'s schedule yet'
+        : `${items.length} item${items.length === 1 ? '' : 's'} from this week's meals`;
+
+      if (desktopSub) desktopSub.textContent = subText;
+      if (mobileSub) mobileSub.textContent = subText;
+
+      const html = items.length === 0
+        ? `
+          <div class="rounded-2xl border-2 border-dashed border-mint-500/25 bg-mint-50/40 p-6 text-center">
+            <p class="text-sm font-extrabold text-stone-800">Grocery list is empty 🛒</p>
+            <p class="text-xs text-stone-500 mt-1">
+              Add ingredients to your dinners and schedule them on your Week to build your shopping list automatically.
+            </p>
+          </div>
+        `
+        : items.map(item => {
+            const isChecked = Boolean(checkedGroceries[item.key]);
+            return `
+              <button
+                type="button"
+                onclick="toggleGroceryCheck('${escapeJsAttr(item.key)}')"
+                class="w-full text-left px-3.5 py-2.5 rounded-2xl border ${isChecked ? 'bg-stone-50 border-stone-200 opacity-60' : 'bg-white border-stone-200 hover:border-mint-500/40'} flex items-center justify-between gap-2.5 transition active:scale-[0.99]"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 ${isChecked ? 'bg-mint-500 border-mint-500 text-white' : 'border-stone-300 bg-white'}">
+                    ${isChecked ? '✓' : ''}
+                  </span>
+                  <span class="text-sm font-bold truncate ${isChecked ? 'line-through text-stone-400' : 'text-stone-900'}">
+                    ${escapeHtml(item.label)}${item.count > 1 ? ` <span class="text-xs font-extrabold text-mint-700">(x${item.count})</span>` : ''}
+                  </span>
+                </div>
+                <span class="text-[11px] font-bold text-stone-400 shrink-0">${item.days.join(', ')}</span>
+              </button>
+            `;
+          }).join('');
+
+      const mobileContainer = document.getElementById('mobile-grocery-list');
+      const desktopContainer = document.getElementById('desktop-grocery-list');
+      if (mobileContainer) mobileContainer.innerHTML = html;
+      if (desktopContainer) desktopContainer.innerHTML = html;
+    }
+
+    // -----------------------------------------------------------
+    // 9. UTILITIES (SAFE CLIPBOARD, TOAST, ESCAPING)
+    // -----------------------------------------------------------
+    function copyTextSafely(text, successMsg) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+
+      let copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch (e) {
+        copied = false;
+      }
+      document.body.removeChild(textarea);
+
+      if (copied) {
+        showToast(successMsg, '📋');
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => showToast(successMsg, '📋'))
+          .catch(() => showToast('Copy failed — please copy from address bar', '⚠️'));
+      } else {
+        showToast('Copy failed — please copy from address bar', '⚠️');
+      }
+    }
+
+    let toastTimeout = null;
+    function showToast(message, icon = '✨') {
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toast-message');
+      const iconEl = document.getElementById('toast-icon');
+      if (!toast || !msgEl) return;
+
+      msgEl.textContent = message;
+      if (iconEl) iconEl.textContent = icon;
+
+      toast.classList.remove('opacity-0', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2600);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeJsAttr(str) {
+      return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
